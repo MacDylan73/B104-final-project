@@ -37,13 +37,7 @@ class gui:
 
         # GUI Constants
         self.questions = ("Transgender", "Weight", "Sexual Activity")
-        self.questionChoices = {
-            "Transgender": ["Overview", "No, I am not transgender", "Yes, I am transgender", "I am not sure if I am transgender", "I do not know what this question is asking"],
-            "Weight": ["Overview", "Lose weight", "Gain weight", "Stay the same weight", "I am not trying to do anything about my weight"],
-            "Sexual Activity": ["Overview", "I have never had sexual intercourse", "1 person", "2 people", "3 people", "4 people", "5 people", "6 or more people"]
-        }
-        self.demographics = ("No Filter", "Age", "Sex", "Grade", "Race", "Height", "Weight")
-
+        
         self.lightTheme = {
             "window_bg": "#f5f5f5",
             "header_bg": "#e0e0e0",
@@ -77,8 +71,8 @@ class gui:
 
         # GUI Dynamic Variables
         self.activeQuestion = "Transgender"
-        self.activeQuestionChoice = "Overview"
-        self.activeDemographic = "No Filter"
+        
+        self.demographics = ["No Filter","No Filter","No Filter","No Filter","No Filter","No Filter","No Filter"]
 
         self.isThemeToggled = False
 
@@ -115,26 +109,14 @@ class gui:
         self.questionComboBox["values"] = self.questions
         self.questionComboBox.bind("<<ComboboxSelected>>", self.changeQuestion)
 
-        # Question Specific Answer Dropdown
-        self.questionChoiceLabel = tk.Label(self.lowerFrame, text="Comparison Choices", padx=10, pady=5, font=font.Font(size=16, weight="bold"), bg=self.lightTheme["footer_bg"], fg=self.lightTheme["footer_fg"])
-
-        self.questionChoiceComboBox = ttk.Combobox(self.lowerFrame)
-        self.questionChoiceComboBox.state(["readonly"])
-        self.questionChoiceComboBox["values"] = self.questionChoices[self.activeQuestion]
-        self.questionChoiceComboBox.bind("<<ComboboxSelected>>", self.changeQuestionChoice)
 
         # Demographic Selection Dropdown
         self.demographicLabel = tk.Label(self.lowerFrame, text="Filter by Demographic", padx=10, pady=5, font=font.Font(size=16, weight="bold"), bg=self.lightTheme["footer_bg"], fg=self.lightTheme["footer_fg"])
+        self.demographicButton = tk.Button(self.lowerFrame, text="Open Filter Settings", activebackground=self.lightTheme["button_bg"], foreground=self.lightTheme["button_fg"], command=self.filterWindow)
 
-        self.demographicComboBox = ttk.Combobox(self.lowerFrame)
-        self.demographicComboBox.state(["readonly"])
-        self.demographicComboBox["values"] = self.demographics
-        self.demographicComboBox.bind("<<ComboboxSelected>>", self.changeDemographic)
 
         # Init Dropdowns
         self.questionComboBox.set("Transgender")
-        self.questionChoiceComboBox.set("Overview")
-        self.demographicComboBox.set("No Filter")
 
         # Names
         self.namesLabel = tk.Label(self.lowerFrame, text="B104 Final Project: Dylan Folscroft and Travis Godley", padx=10, pady=5, font=font.Font(size=8), bg=self.lightTheme["footer_bg"], fg=self.lightTheme["footer_fg"])
@@ -145,14 +127,11 @@ class gui:
 
         self.themeToggle.place(relx=.05, rely=.5, anchor="center")
 
-        self.questionLabel.place(relx=.3, rely=.3, anchor="center")
-        self.questionComboBox.place(relx=.3, rely=.6, anchor="center")
+        self.questionLabel.place(relx=.35, rely=.3, anchor="center")
+        self.questionComboBox.place(relx=.35, rely=.6, anchor="center")
 
-        self.questionChoiceLabel.place(relx=.5, rely=.3, anchor="center")
-        self.questionChoiceComboBox.place(relx=.5, rely=.6, anchor="center")
-
-        self.demographicLabel.place(relx=.7, rely=.3, anchor="center")
-        self.demographicComboBox.place(relx=.7, rely=.6, anchor="center")
+        self.demographicLabel.place(relx=.65, rely=.3, anchor="center")
+        self.demographicButton.place(relx=.65, rely=.6, anchor="center")
 
 
     # toggleTheme function
@@ -175,42 +154,126 @@ class gui:
         self.midFrame.config(bg=theme["content_bg"])
 
         self.lowerFrame.config(bg=theme["footer_bg"])
+        
         self.questionLabel.config(bg=theme["footer_bg"], fg=theme["footer_fg"])
         self.questionComboBox.config()
-        self.questionChoiceLabel.config(bg=theme["footer_bg"], fg=theme["footer_fg"])
-        self.questionChoiceComboBox.config()
+        
         self.demographicLabel.config(bg=theme["footer_bg"], fg=theme["footer_fg"])
-        self.demographicComboBox.config()
+        self.demographicButton.config(bg=theme["button_bg"], fg=theme["button_fg"])
         self.namesLabel.config(bg=theme["footer_bg"], fg=theme["footer_fg"])
-
+        
+        self.settingsWindow.config(bg=theme["footer_bg"])
+        
+        for label in [self.ageFilterLabel, self.sexFilterLabel, self.gradeFilterLabel, self.isHispanicFilterLabel, self.raceFilterLabel, self.heightFilterLabel, self.weightFilterLabel]:
+            label.config(bg=theme["footer_bg"], fg=theme["footer_fg"])
 
     # Dropdown Selection Change Event Handlers
     # !!!NOTE Imported functions from a seperate py file such as dataAnalysis.py can be called here
     def changeQuestion(self, event):
         self.activeQuestion = self.questionComboBox.get()
-
-        self.questionChoiceComboBox["values"] = self.questionChoices[self.activeQuestion]
-        self.questionChoiceComboBox.set("Overview")
-        self.changeQuestionChoice("")
-
-        self.demographicComboBox.set("No Filter")
-        self.changeDemographic("")
-
         print(f"Selected Question: {self.activeQuestion}")
 
         # DO SOEMTHING
 
 
-    def changeQuestionChoice(self, event):
-        self.activeQuestionChoice = self.questionChoiceComboBox.get()
-        print(f"Selected Choice: {self.activeQuestionChoice}")
+    def filterWindow(self):
+        self.settingsWindow = tk.Toplevel(self.window)
+        self.settingsWindow.title("Demographics Filtering Settings")
+        self.settingsWindow.geometry("400x600")
+        
+        theme = self.darkTheme if self.isThemeToggled else self.lightTheme
+        self.settingsWindow.config(bg=theme["footer_bg"])
+        
+        # All demographics options dropdowns
+        # Age
+        self.ageFilterLabel = tk.Label(self.settingsWindow, text="Filter Age", padx=10, pady=5, font=font.Font(size=16, weight="bold"), bg=theme["footer_bg"], fg=theme["footer_fg"])
 
-        # DO SOMETHIGN
+        self.ageFilterComboBox = ttk.Combobox(self.settingsWindow)
+        self.ageFilterComboBox.state(["readonly"])
+        self.ageFilterComboBox["values"] = ["No Filter", "12 years or younger", "13 years old", "14 years old", "15 years old", "16 years old", "17 years old", "18 years or older"]
+        self.ageFilterComboBox.bind("<<ComboboxSelected>>", lambda event: self.changeDemographic(event, 0, self.ageFilterComboBox.get()))
+        
+        self.ageFilterLabel.place(relx=.5, rely=.04, anchor="center")
+        self.ageFilterComboBox.place(relx=.5, rely=.09, anchor="center")
+        self.ageFilterComboBox.set(self.demographics[0])
+        
+        # Sex
+        self.sexFilterLabel = tk.Label(self.settingsWindow, text="Filter Sex", padx=10, pady=5, font=font.Font(size=16, weight="bold"), bg=theme["footer_bg"], fg=theme["footer_fg"])
+
+        self.sexFilterComboBox = ttk.Combobox(self.settingsWindow)
+        self.sexFilterComboBox.state(["readonly"])
+        self.sexFilterComboBox["values"] = ["No Filter", "Female", "Male"]
+        self.sexFilterComboBox.bind("<<ComboboxSelected>>", lambda event: self.changeDemographic(event, 1, self.sexFilterComboBox.get()))
+        
+        self.sexFilterLabel.place(relx=.5, rely=.17, anchor="center")
+        self.sexFilterComboBox.place(relx=.5, rely=.22, anchor="center")
+        self.sexFilterComboBox.set(self.demographics[1])
+        
+        # Grade
+        self.gradeFilterLabel = tk.Label(self.settingsWindow, text="Filter Grade", padx=10, pady=5, font=font.Font(size=16, weight="bold"), bg=theme["footer_bg"], fg=theme["footer_fg"])
+
+        self.gradeFilterComboBox = ttk.Combobox(self.settingsWindow)
+        self.gradeFilterComboBox.state(["readonly"])
+        self.gradeFilterComboBox["values"] = ["No Filter", "9th grade", "10th grade", "11th grade", "12th grade", "Ungraded or other grade"]
+        self.gradeFilterComboBox.bind("<<ComboboxSelected>>", lambda event: self.changeDemographic(event, 2, self.gradeFilterComboBox.get()))
+        
+        self.gradeFilterLabel.place(relx=.5, rely=.3, anchor="center")
+        self.gradeFilterComboBox.place(relx=.5, rely=.35, anchor="center")
+        self.gradeFilterComboBox.set(self.demographics[2])
+        
+        # isHispanic
+        self.isHispanicFilterLabel = tk.Label(self.settingsWindow, text="Filter Hispanic/Latino", padx=10, pady=5, font=font.Font(size=16, weight="bold"), bg=theme["footer_bg"], fg=theme["footer_fg"])
+
+        self.isHispanicFilterComboBox = ttk.Combobox(self.settingsWindow)
+        self.isHispanicFilterComboBox.state(["readonly"])
+        self.isHispanicFilterComboBox["values"] = ["No Filter", "Yes", "No"]
+        self.isHispanicFilterComboBox.bind("<<ComboboxSelected>>", lambda event: self.changeDemographic(event, 3, self.isHispanicFilterComboBox.get()))
+        
+        self.isHispanicFilterLabel.place(relx=.5, rely=.43, anchor="center")
+        self.isHispanicFilterComboBox.place(relx=.5, rely=.48, anchor="center")
+        self.isHispanicFilterComboBox.set(self.demographics[3])
+        
+        # Race
+        self.raceFilterLabel = tk.Label(self.settingsWindow, text="Filter Race", padx=10, pady=5, font=font.Font(size=16, weight="bold"), bg=theme["footer_bg"], fg=theme["footer_fg"])
+
+        self.raceFilterComboBox = ttk.Combobox(self.settingsWindow)
+        self.raceFilterComboBox.state(["readonly"])
+        self.raceFilterComboBox["values"] = ["No Filter", "American Indian or Alaska Native", "Asian", "Black or African American", "Native Hawaiian or Other Pacific Islander", "White"]
+        self.raceFilterComboBox.bind("<<ComboboxSelected>>", lambda event: self.changeDemographic(event, 4, self.raceFilterComboBox.get()))
+        
+        self.raceFilterLabel.place(relx=.5, rely=.56, anchor="center")
+        self.raceFilterComboBox.place(relx=.5, rely=.61, anchor="center")
+        self.raceFilterComboBox.set(self.demographics[4])
+        
+        # Height
+        self.heightFilterLabel = tk.Label(self.settingsWindow, text="Filter Height", padx=10, pady=5, font=font.Font(size=16, weight="bold"), bg=theme["footer_bg"], fg=theme["footer_fg"])
+
+        self.heightFilterComboBox = ttk.Combobox(self.settingsWindow)
+        self.heightFilterComboBox.state(["readonly"])
+        self.heightFilterComboBox["values"] = ["No Filter", "INSERT RANGE 1", "INSERT RANGE 2"]
+        self.heightFilterComboBox.bind("<<ComboboxSelected>>", lambda event: self.changeDemographic(event, 5, self.heightFilterComboBox.get()))
+        
+        self.heightFilterLabel.place(relx=.5, rely=.69, anchor="center")
+        self.heightFilterComboBox.place(relx=.5, rely=.74, anchor="center")
+        self.heightFilterComboBox.set(self.demographics[5])
+        
+        # Weight
+        self.weightFilterLabel = tk.Label(self.settingsWindow, text="Filter Weight", padx=10, pady=5, font=font.Font(size=16, weight="bold"), bg=theme["footer_bg"], fg=theme["footer_fg"])
+
+        self.weightFilterComboBox = ttk.Combobox(self.settingsWindow)
+        self.weightFilterComboBox.state(["readonly"])
+        self.weightFilterComboBox["values"] = ["No Filter", "INSERT RANGE 1", "INSERT RANGE 2"]
+        self.weightFilterComboBox.bind("<<ComboboxSelected>>", lambda event: self.changeDemographic(event, 6, self.weightFilterComboBox.get()))
+        
+        self.weightFilterLabel.place(relx=.5, rely=.82, anchor="center")
+        self.weightFilterComboBox.place(relx=.5, rely=.87, anchor="center")
+        self.weightFilterComboBox.set(self.demographics[6])
+        
 
 
-    def changeDemographic(self, event):
-        self.activeDemographic = self.demographicComboBox.get()
-        print(f"Selected Demographic: {self.activeDemographic}")
+    def changeDemographic(self, event, index, selection):
+        self.demographics[index] = selection
+        print(f"Selected Demographic: {self.demographics}")
 
         # DO SOMETHING
 
