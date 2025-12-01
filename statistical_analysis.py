@@ -5,9 +5,12 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import tkinter as tk
 from loading import displayLoadingScreen, endLoadingScreen, animate
 
+
+# Define variables for the data file and columns 
 DATA = 'YBRSS_COMBINED.csv'
 COLUMNS = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q29', 'q58', 'q65', 'q67']
 
+# Map responses to integers that can be used for analysis. 
 Q29_MAP = {1: '0 times', 2: '1 time', 3: '2 or 3 times', 4: '4 or 5 times', 5: '6+ times'}
 Q58_MAP = {1: '0 partners', 2: '1 partner', 3: '2 partners', 4: '3 partners', 5: '4 partners', 6: '5 partners', 7: '6+ partners', 8: 'Did not answer'}
 Q65_MAP = {1: 'Yes, Transgender', 2: 'No, Not Transgender', 3: 'Not Sure', 4: 'Prefer not to answer'}
@@ -48,6 +51,7 @@ darkTheme = {
 
 def process(path, col, gender=None):
 
+# Read the data from the csv inport into the dataframe and handle errors due to no values
     df = pd.read_csv(path, usecols=COLUMNS)
     df['q29'] = pd.to_numeric(df['q29'], errors='coerce')
     df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -55,7 +59,8 @@ def process(path, col, gender=None):
     df = df.dropna(subset=['q2', 'q29', col])
     df = df[df['q2'].isin(MAP_LOOKUP['q2'].keys())]
     df = df[df['q29'].isin(MAP_LOOKUP['q29'].keys())]
-    
+
+# Remove responses that do not have statistical relevance    
     if gender is not None:
         df = df[df['q2'] == gender]
     if col == 'q58':
@@ -66,6 +71,7 @@ def process(path, col, gender=None):
         df = df[df[col] != 4]
     return df, None
 
+# Primamry analysis function calls the process to get the cleaned data
 def analyze(col, label, gender, plot, frame, theme, classItem):
     ani, fr = displayLoadingScreen(classItem)
     df, _ = process(DATA, col, gender)
@@ -80,6 +86,7 @@ def analyze(col, label, gender, plot, frame, theme, classItem):
     selector(df, label, col, desc, plot, frame, theme, classItem, ani, fr)
     return df, result_text + '\nNote: No statistical tests were performed.'
 
+# Function to call either bar graph or stat plot
 def selector(df, label, name, desc, plot, frame, theme, classItem, ani, fr):
     animate(ani, "'", fr)
     if plot == 'Bar Graph':
@@ -87,6 +94,7 @@ def selector(df, label, name, desc, plot, frame, theme, classItem, ani, fr):
     if plot == 'Stat Plot':
         stat_plot(df, label, name, desc, frame, theme, classItem, ani, fr)
 
+# Function to create Bar Graph by suicide attempts
 def bar_graph(df, label, name, desc, frame, theme, classItem, ani, fr):
     plt.figure(figsize=(8, 4.8))
     
@@ -151,7 +159,7 @@ def bar_graph(df, label, name, desc, frame, theme, classItem, ani, fr):
     
     endLoadingScreen(classItem)
     
-    
+# Function to create stat plot by suicide attempts 
 def stat_plot(df, label, name, desc, frame, theme, classItem, ani, fr):
     df_plot = df.copy()
     present_numeric_codes = sorted(df_plot[name].unique())
