@@ -3,10 +3,13 @@ Loading.py
 
 Must be imported into statistical analysis
 
-Makes the slightly jarring and uncomfortable flashing when the graph is being changed
-slightly more bearable.  Also displays a cool burger flipping animation
+Minimizes the slightly jarring and uncomfortable flashing when the graph is being changed.  
+Also displays a cool burger flipping animation
 
-Not fully essential to function, improves QOL
+Not fully essential to function 
+
+Must be passed createGUI class object to access midFrame and midFrameParent to manipulate GUI
+
 """
 import time
 import tkinter as tk
@@ -14,11 +17,13 @@ from tkinter import font
 
     
 def displayLoadingScreen(classItem):
+    # make local variables from createGUI object
     frame = classItem.midFrameParent
     inner = classItem.midFrame
     
-    print("loading")
+    print("loading") # debugging
     
+    # get theme - init and place widgets
     theme = classItem.lightTheme if not classItem.isThemeToggled else classItem.darkTheme 
     frame.config(bg=theme["content_bg"])
     
@@ -35,12 +40,14 @@ def displayLoadingScreen(classItem):
     return animation, frame
 
 
+# changes the text in the label to make it appear animated
 def animate(label, text, frame):
     label.config(text=text)
     frame.update()
     time.sleep(.05)
     
     
+# end of loading, removes parent frame to uncover and redraw inner midFrame
 def endLoadingScreen(classItem):
     frame = classItem.midFrameParent
     inner = classItem.midFrame
@@ -48,11 +55,12 @@ def endLoadingScreen(classItem):
     print("loading done")
     time.sleep(.13)
     
-    # remove label
+    # remove labels
     for widget in frame.winfo_children():
         if isinstance(widget, tk.Label):
             widget.destroy()
     
+    # replace inner frame
     inner.place(relwidth=1, relheight=1)
     
     
