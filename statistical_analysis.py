@@ -18,6 +18,7 @@ Q67_MAP = {1: 'Trying to lose weight', 2: 'Trying to gain weight', 3: 'Trying to
 Q2_MAP = {1: 'Male', 2: 'Female'}
 MAP_LOOKUP = {'q29': Q29_MAP, 'q58': Q58_MAP, 'q65': Q65_MAP, 'q67': Q67_MAP, 'q2': Q2_MAP}
 
+# Theme variables (for gradient bar colors)
 barColorsLight = {
     0: "#b3c9dc",  
     1: "#94b5d0",
@@ -38,11 +39,11 @@ barColorsDark = {
     6: "#7299c9",  
 }
 
+# more theme variables (for background/labels)
 lightTheme = {
     "content_bg": "#ffffff",
     "content_fg": "#3c3c3c",
 }
-
 darkTheme = {
     "content_bg": "#2c2c2c",
     "content_fg": "#d0d0d0",
@@ -51,7 +52,7 @@ darkTheme = {
 
 def process(path, col, gender=None):
 
-# Read the data from the csv inport into the dataframe and handle errors due to no values
+    # Read the data from the csv inport into the dataframe and handle errors due to no values
     df = pd.read_csv(path, usecols=COLUMNS)
     df['q29'] = pd.to_numeric(df['q29'], errors='coerce')
     df[col] = pd.to_numeric(df[col], errors='coerce')
@@ -60,7 +61,7 @@ def process(path, col, gender=None):
     df = df[df['q2'].isin(MAP_LOOKUP['q2'].keys())]
     df = df[df['q29'].isin(MAP_LOOKUP['q29'].keys())]
 
-# Remove responses that do not have statistical relevance    
+    # Remove responses that do not have statistical relevance    
     if gender is not None:
         df = df[df['q2'] == gender]
     if col == 'q58':
@@ -71,9 +72,13 @@ def process(path, col, gender=None):
         df = df[df[col] != 4]
     return df, None
 
+
 # Primamry analysis function calls the process to get the cleaned data
 def analyze(col, label, gender, plot, frame, theme, classItem):
+    # init loading screen to cover up graph reconfig/changes
     ani, fr = displayLoadingScreen(classItem)
+    
+    # get cleaned data using process, call selector to continue graph generation
     df, _ = process(DATA, col, gender)
     animate(ani, "-", fr)
     if gender is None:
@@ -86,6 +91,7 @@ def analyze(col, label, gender, plot, frame, theme, classItem):
     selector(df, label, col, desc, plot, frame, theme, classItem, ani, fr)
     return df, result_text + '\nNote: No statistical tests were performed.'
 
+
 # Function to call either bar graph or stat plot
 def selector(df, label, name, desc, plot, frame, theme, classItem, ani, fr):
     animate(ani, "'", fr)
@@ -93,6 +99,7 @@ def selector(df, label, name, desc, plot, frame, theme, classItem, ani, fr):
         bar_graph(df, label, name, desc, frame, theme, classItem, ani, fr)
     if plot == 'Stat Plot':
         stat_plot(df, label, name, desc, frame, theme, classItem, ani, fr)
+
 
 # Function to create Bar Graph by suicide attempts
 def bar_graph(df, label, name, desc, frame, theme, classItem, ani, fr):
@@ -103,6 +110,7 @@ def bar_graph(df, label, name, desc, frame, theme, classItem, ani, fr):
     avg_attempts = avg_attempts.reindex(code)
     avg_attempts.index = [MAP_LOOKUP[name].get(idx, f'Code {idx}') for idx in avg_attempts.index]
     
+    # get theme
     if theme:
         toggleTheme = darkTheme
         barColor = barColorsDark
@@ -115,7 +123,7 @@ def bar_graph(df, label, name, desc, frame, theme, classItem, ani, fr):
     graph = avg_attempts.plot(kind='bar')
     figure = graph.get_figure()
     
-    # Add Color Coded Bars
+    # Add color coded bars in order of height
     order = []
     for bar in graph.patches:
         order.append(bar.get_height())
@@ -127,7 +135,7 @@ def bar_graph(df, label, name, desc, frame, theme, classItem, ani, fr):
                 bar.set_facecolor(barColor[i])
                 
                 
-    
+    # graph config
     plt.title(f'{desc}: Avg Suicide Attempts by {label}', color=toggleTheme["content_fg"])
     plt.xlabel(f'{label}', color=toggleTheme["content_fg"])
     plt.ylabel('Avg Suicide Attempts', color=toggleTheme["content_fg"])
@@ -136,6 +144,7 @@ def bar_graph(df, label, name, desc, frame, theme, classItem, ani, fr):
     
     animate(ani, "-", fr)
     
+    # style tick labels
     plt.tick_params(color=toggleTheme["content_fg"])
     for label in graph.get_xticklabels():
         label.set_color(color=toggleTheme["content_fg"])
@@ -149,15 +158,16 @@ def bar_graph(df, label, name, desc, frame, theme, classItem, ani, fr):
         widget.destroy()
     
     animate(ani, "_", fr)
-    # draw new graph on canvas
+    # draw new graph on canvas (which is widget in midFrame) using matplotlib figure object
     canvas = FigureCanvasTkAgg(figure, frame)
     figure.patch.set_facecolor(toggleTheme["content_bg"])
     graph.set_facecolor(toggleTheme["content_bg"])
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
     canvas.draw()
 
-    
+    # end loading screen
     endLoadingScreen(classItem)
+    
     
 # Function to create stat plot by suicide attempts 
 def stat_plot(df, label, name, desc, frame, theme, classItem, ani, fr):
@@ -166,23 +176,27 @@ def stat_plot(df, label, name, desc, frame, theme, classItem, ani, fr):
     category_order_labels = [MAP_LOOKUP[name][code] for code in present_numeric_codes]
     df_plot[label] = df_plot[name].map(MAP_LOOKUP[name])
     animate(ani, "´", fr)
+    
+    # get theme
     if theme:
         toggleTheme = darkTheme
     else: toggleTheme = lightTheme
     
-    
+    # creating plot
     g = sns.catplot(x=label, y='q29', data=df_plot, kind='point', height=4, aspect=1.5, order = category_order_labels)
     g.fig.suptitle(f'{desc}: Avg Suicide Attempts by {label}', y=1.05)
     figure = g.fig
     graph = g.ax
     
+    # config
     graph.title.set_color(toggleTheme["content_fg"])
     graph.xaxis.label.set_color(toggleTheme["content_fg"])
     graph.yaxis.label.set_color(toggleTheme["content_fg"])
     
     g.set_axis_labels(label, 'Avg Suicide Attempts')
     plt.title(f'{desc}: Avg Suicide Attempts by {label}', color=toggleTheme["content_fg"])
-
+    
+    # style tick labels
     graph.tick_params(color=toggleTheme["content_fg"])
     for label in graph.get_xticklabels():
         label.set_color(color=toggleTheme["content_fg"])
@@ -195,23 +209,23 @@ def stat_plot(df, label, name, desc, frame, theme, classItem, ani, fr):
     plt.grid(axis='y')
     plt.tight_layout()
     
+    # MUST HAVE gets rid of old graph
     for widget in frame.winfo_children():
         widget.destroy()
 
     animate(ani, "_", fr)  
-    # draw new graph on canvas
+    # draw new graph on canvas (same as bar graph display)
     canvas = FigureCanvasTkAgg(figure, frame)
     figure.patch.set_facecolor(toggleTheme["content_bg"])
     graph.set_facecolor(toggleTheme["content_bg"])
     canvas.draw()
     canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
     
+    # end loading
     endLoadingScreen(classItem)
     
+    # plt.show() never use this
     
-    # plt.show()
-    
-
 
 """
 Sources:
