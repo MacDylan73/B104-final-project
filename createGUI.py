@@ -13,10 +13,12 @@ Usage in main.py:
 Results in the Tkinter GUI window being displayed until the user closes it.
 
 MidFrame is passed to statisical_analysis.py for the graphs to be drawn in
-MidFrameParent is used in loading.py to overlay the loading animation during graph creation
+MidFrameParent is used in loading.py and by the help screen functions to overlay the loading animation during graph creation
 
-Fully controls program logical and calls all graph creation. Graphs may be created
-by changing the theme, graph selection, question selection, or gender filter.  
+Fully controls program logic and calls all graph creation. Graphs may be created
+by changing the theme, graph selection, question selection, or gender filter.
+
+Help screen is displayed upon open and can be toggled using the help button or closed using the close button  
 
 """
 
@@ -34,15 +36,16 @@ class gui:
     def __init__(self, window):
         # Window Init
         self.window = window
-        self.title = "2023 YRBSS Data Analysis Compared Against Suicide Attempts"                # CHANGE TITLE OF WINDOW IF NEEDED
+        self.title = "2023 YRBSS Data Analysis Compared Against Suicide Attempts"  # WINDOW TITLE
         self.window.title("B104 Final Project - Dylan Folscroft & T.J. Godley")
-        # self.window.iconphoto(True, tk.PhotoImage(file="PATH_HERE"))  # CHANGE ICON IF NEEDED
+        # self.window.iconphoto(True, tk.PhotoImage(file="PATH_HERE"))  # CHANGE ICON IF WANT
         self.window.geometry("1400x800")
 
-        # GUI Constants
+        # GUI Constants (Dropdown Values)
         self.questions = ("Sexual Identity", "Weight Management", "Sexual Activity")
         self.genders = ("Everybody", "Male", "Female")
         
+        # Theme dictionaries
         self.lightTheme = {
             "window_bg": "#f5f5f5",
             "header_bg": "#e0e0e0",
@@ -58,7 +61,6 @@ class gui:
             "accent": "#cccccc",
 
         }
-
         self.darkTheme = {
             "window_bg": "#1a1a1a",
             "header_bg": "#3a3a3a",
@@ -74,38 +76,21 @@ class gui:
             "accent": "#555555",
         }
 
-        # GUI Dynamic Variables
+        # GUI Dynamic/Control Variables
         self.activeQuestion = "Sexual Identity"
         self.activeGender = None
         
         self.isThemeToggled = False
         self.isGraphToggled = False
-
+        self.showHelp = False
+        
+        # Init and create GUI
         self.init_gui()
         self.createGraph()
-
-    # Initialize Tkinter Widgets and Place them on the screen
-    def createGraph(self):
-        if self.activeQuestion == "Sexual Identity":
-            q = "q65"
-        elif self.activeQuestion == "Sexual Activity":
-            q = "q58"
-        else: q = "q67"
-        label = self.activeQuestion
-        gender = self.activeGender
-        if gender == "Male": 
-            gender = 1
-        elif gender == "Female":
-            gender = 2
-        else:
-            gender = None
-            
-        if self.isGraphToggled: 
-            graph = "Stat Plot"
-        elif not self.isGraphToggled: graph = "Bar Graph"
-        
-        analyze(q, label, gender, graph, self.midFrame, self.isThemeToggled, self)
+        self.toggleHelp()
     
+    
+    # Initialization and placement of Tkinter widgets 
     def init_gui(self):
         # Frames for easier organization
         rootFrame = tk.Frame(self.window, bg=self.lightTheme["window_bg"])
@@ -127,20 +112,18 @@ class gui:
         # Title
         self.titleLabel = tk.Label(self.upperFrame, text=self.title, padx=10, pady=5, font=font.Font(size=32, weight="bold"), bg=self.lightTheme["header_bg"], fg=self.lightTheme["header_fg"])
 
-        # Theme
+        # Theme Toggle
         self.themeToggle = tk.Button(self.lowerFrame, text="Dark Mode", activebackground=self.lightTheme["button_bg"], foreground=self.lightTheme["button_fg"], command=self.toggleTheme)
         
-        # Graph
+        # Graph Toggle
         self.graphToggle = tk.Button(self.lowerFrame, text="Stat Plot", activebackground=self.lightTheme["button_bg"], foreground=self.lightTheme["button_fg"], command=self.toggleGraph)
 
         # Question Selection Dropdown
         self.questionLabel = tk.Label(self.lowerFrame, text="Comparison", padx=10, pady=5, font=font.Font(size=16, weight="bold"), bg=self.lightTheme["footer_bg"], fg=self.lightTheme["footer_fg"])
-
         self.questionComboBox = ttk.Combobox(self.lowerFrame)
         self.questionComboBox.state(["readonly"])
         self.questionComboBox["values"] = self.questions
         self.questionComboBox.bind("<<ComboboxSelected>>", self.changeQuestion)
-
 
         # Gender Selection Dropdown
         self.genderLabel = tk.Label(self.lowerFrame, text="Filter by Gender", padx=10, pady=5, font=font.Font(size=16, weight="bold"), bg=self.lightTheme["footer_bg"], fg=self.lightTheme["footer_fg"])
@@ -153,17 +136,18 @@ class gui:
         self.questionComboBox.set("Sexual Identity")
         self.genderCombobox.set("Everybody")
 
-        # Names
+        # Names and Help Button
         self.namesLabel = tk.Label(self.lowerFrame, text="B104 Final Project: Dylan Folscroft and Travis Godley", padx=10, pady=5, font=font.Font(size=8), bg=self.lightTheme["footer_bg"], fg=self.lightTheme["footer_fg"])
+        self.helpButton = tk.Button(self.lowerFrame, text="Help", activebackground=self.lightTheme["button_bg"], foreground=self.lightTheme["button_fg"], command=self.toggleHelp)
 
-        # Place Elements
+        # Place All Elements
         self.titleLabel.place(relx=.5, rely=.5, anchor="center")
         self.namesLabel.place(relx=1, rely=1, anchor="se")
+        self.helpButton.place(relx=.96, rely=.5, anchor="center")
 
         self.themeToggle.place(relx=.05, rely=.5, anchor="center")
         self.graphToggle.place(relx=.1, rely=.5, anchor="center")
         
-
         self.questionLabel.place(relx=.35, rely=.3, anchor="center")
         self.questionComboBox.place(relx=.35, rely=.6, anchor="center")
 
@@ -171,18 +155,62 @@ class gui:
         self.genderCombobox.place(relx=.65, rely=.6, anchor="center")
 
 
-    # toggleTheme function
-    # reconfigures colors/styles for elements on the screen based on isThemeToggled variable
+    # Creates graph from statistical_analysis.py analyze function
+    def createGraph(self):
+        """
+        Called by GUI change of selection of graph type, theme, gender filter, or question comparison
+        
+        Gathers following parameters to send to the analyze definition in statistical_analysis.py:
+        - Active Question (What to compare against suicide attempts)
+        - Gender Filter
+        - GUI Active Theme
+        - Type of graph (Bar vs Stat Plot)
+        - self.midFrame (for the graph to be drawn into)
+        - self class object (used down the line for loading animations and overlay)
+        -------
+        No return values
+        
+        """
+        # Must first close help menu if open 
+        if self.showHelp: self.toggleHelp()
+            
+        # gather all parameters and call analyze
+        if self.activeQuestion == "Sexual Identity":
+            q = "q65"
+        elif self.activeQuestion == "Sexual Activity":
+            q = "q58"
+        else: q = "q67"
+        label = self.activeQuestion
+        gender = self.activeGender
+        if gender == "Male": 
+            gender = 1
+        elif gender == "Female":
+            gender = 2
+        else:
+            gender = None
+            
+        if self.isGraphToggled: 
+            graph = "Stat Plot"
+        elif not self.isGraphToggled: graph = "Bar Graph"
+        
+        analyze(q, label, gender, graph, self.midFrame, self.isThemeToggled, self)
+        
+        
+    # Reconfigures colors/styles for widgets on the screen based on isThemeToggled variable
+    # Note this does not change appearance of graph or loading animations (this is done in their respective files)
     def toggleTheme(self):
+        # toggle state manager
         self.isThemeToggled = not self.isThemeToggled
-
+        
+        # chose theme dictionary
         if(self.isThemeToggled):
             theme = self.darkTheme
             self.themeToggle.config(text="Light Mode")
         else:
             theme = self.lightTheme
             self.themeToggle.config(text="Dark Mode")
-
+            
+        # config widgets
         self.themeToggle.config(bg=theme["button_bg"], fg=theme["button_fg"])
         self.graphToggle.config(bg=theme["button_bg"], fg=theme["button_fg"])
 
@@ -199,18 +227,21 @@ class gui:
         self.genderLabel.config(bg=theme["footer_bg"], fg=theme["footer_fg"])
 
         self.namesLabel.config(bg=theme["footer_bg"], fg=theme["footer_fg"])
+        self.helpButton.config(bg=theme["footer_bg"], fg=theme["footer_fg"])
         
+        # Recreate graph so it can be restyled
         self.createGraph()
         
 
     # Dropdown Selection Change Event Handlers
-    # !!!NOTE Imported functions from a seperate py file such as dataAnalysis.py can be called here
+    # !!!NOTE All Call createGraph to handle graph creation
     def changeQuestion(self, event):
         self.activeQuestion = self.questionComboBox.get()
         print(f"Selected Question: {self.activeQuestion}")
         
         # DO SOEMTHING
         self.createGraph()
+        
         
     def changeGender(self, event):
         val = self.genderCombobox.get()
@@ -224,6 +255,7 @@ class gui:
         # DO SOMETHING
         self.createGraph()
         
+        
     def toggleGraph(self):
         self.isGraphToggled = not self.isGraphToggled
         
@@ -233,6 +265,42 @@ class gui:
             self.graphToggle.config(text="Stat Plot")
         
         self.createGraph()
+        
+        
+    def toggleHelp(self):
+        self.showHelp = not self.showHelp
+        if self.showHelp: self.showHelpMidFrame() 
+        else: self.hideHelpMidFrame()
+        
+        
+    def showHelpMidFrame(self):
+        # check theme
+        if self.isThemeToggled: mft = self.darkTheme
+        else: mft = self.lightTheme
+        
+        # init and place widgets
+        self.helpLabel = tk.Label(self.midFrameParent, text="Chose options on the dropdowns below to generate or filter graphs.\nUse the buttons below to toggle the type of graph or the gui theme.", padx=100, pady=5, font=font.Font(size=16, weight="bold", slant="italic"), bg=mft["content_bg"], fg=mft["content_fg"])
+        self.helpLabel.place(relx=.5, rely=.4, anchor="center")
+
+        # spaces and newlines create internal padding in the button widget
+        self.closeHelp = tk.Button(self.midFrameParent, text="\n                    Close                    \n", bg=mft["button_bg"], fg=mft["button_fg"], command=self.toggleHelp)
+        self.closeHelp.place(relx=.5, rely=.5, anchor="center")
+        
+        # place midFrameParent, erase the inner midframe
+        self.midFrameParent.place(rely=.075, relwidth=1, relheight=.8)
+        self.midFrame.place_forget()
+        
+        
+    def hideHelpMidFrame(self):
+        # remove everything from midFrameParent
+        for widget in self.midFrameParent.winfo_children():
+            if isinstance(widget, tk.Label):
+                widget.destroy()
+            elif isinstance(widget, tk.Button):
+                widget.destroy()
+        
+        # replace the inner midFrame
+        self.midFrame.place(relwidth=1, relheight=1)
 
 """
 Sources:
